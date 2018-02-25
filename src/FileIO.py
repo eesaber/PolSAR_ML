@@ -20,7 +20,7 @@ def read(argv='single'):
     print ("Training data doesn't exist. The process is closed...")
     sys.exit()
 
-def get_cut():
+def load_cut():
     return {'train':(2400,2800,7200,8200), 'test':(1)}
 
 if __name__=='__main__':

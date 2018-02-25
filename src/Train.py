@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-  
 
-from FileIO import read, get_cut
+from FileIO import read, load_cut
 
 from keras.layers import Input, Dense, Conv2D, MaxPooling2D, UpSampling2D
 from keras.models import Model,Sequential
@@ -11,7 +11,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def direct(code_dim = 4):
-    # If 
     # Loading data and cut the image into pieces 每張小圖的尺寸應該要是一個建築物大小左右。
     s = read()
     cut = load_cut()
