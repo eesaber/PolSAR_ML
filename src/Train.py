@@ -1,33 +1,37 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-  
 
-from FileIO import read
+from FileIO import read, get_cut
 
 from keras.layers import Input, Dense, Conv2D, MaxPooling2D, UpSampling2D
 from keras.models import Model,Sequential
+from keras import regularizers
 
 import numpy as np
 import matplotlib.pyplot as plt
 
-if __name__=='__main__':
+def direct(code_dim = 4):
+    # If 
     # Loading data and cut the image into pieces 每張小圖的尺寸應該要是一個建築物大小左右。
     s = read()
-    scat = s
+    cut = load_cut()
+    x_train = 
+    x_test = 
 # Model 
+    encoding_dim = code_dim
     # Encoding 
-    x = Dense(128, activation='relu')(scat)
-    x = Dense(64, activation='relu')(x)
-    encode = Dense(4, activation='relu')(x)
+    scat = Input(shape=(10*10,))
+    x = Dense(128, activation='relu', activity_regularizer=regularizers.l1(10e-5))(scat)
+    x = Dense(64, activation='relu', activity_regularizer=regularizers.l1(10e-5))(x)
+    encode = Dense(encoding_dim, activation='relu', activity_regularizer=regularizers.l1(10e-5))(x)
     # Decoding
-    x = Dense(4, activation='relu')(encode)
-    decoded = Dense(64, activation='relu')(x)
+    x = Dense(64, activation='relu')(encode)
+    decoded = Dense(128, activation='relu')(x)
 
     autoencoder = Model(scat, decoded) # Autoencoder model
-    
     encoder = Model(scat, encode) # Encoder model
-
-    encoded_input = Input(shape=(4,))
-    decoder_layer = autoencoder.layers[-1]
+    encoded_input = Input(shape=(encoding_dim,)) # Encoded holding-place
+    decoder_layer = autoencoder.layers[-1] 
     decoder = Model(encoded_input, decoder_layer(encoded_input)) # Decoder model
 
     #Training part    
@@ -53,3 +57,8 @@ if __name__=='__main__':
         ax.get_yaxis().set_visible(False)
     plt.show()
     '''
+def conv(code_dim = 4):
+    1
+
+if __name__=='__main__':
+    direct()
