@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import sys
-import h5py
-import numpy as np
-import matplotlib.pyplot as plt
 import os.path
+import sys
+
+import h5py
+import matplotlib.pyplot as plt
+import numpy as np
 
 def read(argv='single'):
     opt = {'double':'Covariance_d.mat', 'single':'Covariance.mat', 'sparse':'Covariance_ds.mat','test':'test.mat'}
@@ -14,7 +15,7 @@ def read(argv='single'):
         if os.path.isfile(pat+opt[argv]):
             f =  h5py.File(pat+opt[argv],'r')
             s = {}
-            for k,v in f.items():
+            for k, v in f.items():
                 s[k] = np.array(v)
             return s
     print ("Training data doesn't exist. The process is closed...")
@@ -23,8 +24,8 @@ def read(argv='single'):
 def load_cut():
     return {'train':(2400,2800,7200,8200), 'test':(1)}
 
-if __name__=='__main__':
-    # DEBUG 
+if __name__ == '__main__':
+    # DEBUG
     s = read('test')
     s['hh_hh'][s['hh_hh'] == 0] = 0.0000001
     plt.figure(1)
@@ -35,4 +36,3 @@ if __name__=='__main__':
     plt.colorbar()
     plt.title('$S^2_{hh} (dB)$', fontsize=24)
     plt.show()
-    

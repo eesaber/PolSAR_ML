@@ -6,8 +6,8 @@ from sklearn.manifold import Isomap
 import matplotlib.pyplot as plt
 
 path = ['/mnt/d/Code/PolSAR_ML/data/test.mat', 'C:/Code/PolSAR_ML/data/test.mat',
-		'/home/akb/Code/PolSAR_ML']
-s = loadmat(path[0])
+		'/home/akb/Code/PolSAR_ML/data/test.mat']
+s = loadmat(path[2])
 hh_hh = np.array(s['hh_hh'])
 hv_hv = np.array(s['hv_hv'])
 vv_vv = np.array(s['vv_vv'])
