@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python3
-import scipy
+from scipy.io import loadmat
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import numpy as np
 import h5py
 import os.path
-
-from sklearn.neural_network import MLPClassifier
 
 from keras.layers import Input, Dense, Conv2D, MaxPooling2D, UpSampling2D
 from keras.layers import Dropout, Activation, Flatten
@@ -27,7 +25,7 @@ if 'tensorflow' == K.backend():
     from keras.backend.tensorflow_backend import set_session
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
-    config.gpu_options.per_process_gpu_memory_fraction = 0.3
+    config.gpu_options.per_process_gpu_memory_fraction = 0.5
     config.gpu_options.visible_device_list = "0"
     set_session(tf.Session(config=config))
 
@@ -38,15 +36,15 @@ file_path = work_path+'data/'
 model_path =   work_path+'model/'
 
 if os.path.isfile(file_path+'x_1.mat'):
-    mat_dict = scipy.io.loadmat(file_path+'x_1.mat')
+    mat_dict = loadmat(file_path+'x_1.mat')
     x_train_1 = np.array(mat_dict['x_1'])    
 if os.path.isfile(file_path+'x_2.mat'):
-    mat_dict = scipy.io.loadmat(file_path+'x_2.mat')
+    mat_dict = loadmat(file_path+'x_2.mat')
     x_train_2 = np.array(mat_dict['x_2'])
 x_train = np.concatenate((x_train_1, x_train_2), axis=0)
 
 if os.path.isfile(file_path+'y.mat'):
-    mat_dict = scipy.io.loadmat(file_path+'y.mat')
+    mat_dict = loadmat(file_path+'y.mat')
     y_train = np.array(mat_dict['y'])
 
 #%%
