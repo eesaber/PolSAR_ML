@@ -5,11 +5,9 @@ Created on Wed Oct 10 15:29:30 2018
 
 @author: Usted
 """
-import os.path, os.environ
-import matplotlib.use
 import matplotlib.pyplot as plt
 import numpy as np
-
+import os
 '''
 import tensorflow as tf
 size = 500
@@ -26,10 +24,3 @@ result = sess.run(sum_result)
 dir_path = os.path.dirname(os.path.realpath(__file__))
 print(dir_path)
 print(dir_path[0:dir_path.find('src')])
-
-if os.environ.get('DISPLAY') is None:
-    matplotlib.use('Agg')
-
-plt.figure()
-plt.imshow(np.ones(3,1))
-plt.show()

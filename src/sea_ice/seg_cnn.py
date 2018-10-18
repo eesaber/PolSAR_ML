@@ -2,9 +2,8 @@
 #!/usr/bin/env python3
 from scipy.io import loadmat
 import matplotlib.pyplot as plt
-import matplotlib.use
 import numpy as np
-import os.path, os.environ
+import os
 
 from keras import utils
 from keras import backend as K
@@ -26,9 +25,6 @@ if not eat_all and 'tensorflow' == K.backend():
     config.gpu_options.per_process_gpu_memory_fraction = 0.3
     config.gpu_options.visible_device_list = "0"
     set_session(tf.Session(config=config))
-#%% Detect if $DISPALY exist 
-if os.environ.get('DISPLAY') is None:
-    matplotlib.use('Agg')
 
 #%% read file
 work_path = os.path.dirname(os.path.realpath(__file__))
@@ -49,10 +45,12 @@ if os.path.isfile(file_path+'y.mat'):
     y_train = np.array(mat_dict['y'])
 
 #%%
+'''
 plt.figure()
 plt.imshow(x_train[1,:,:,:])
 plt.gca().invert_yaxis()    
 plt.show()
+'''
 #%% imput data and setting
 batch_size = 16
 epochs = 100
@@ -107,13 +105,9 @@ seg_cnn.compile(optimizer='adadelta', loss='categorical_crossentropy')
 
 
 #%% training
-try:
-    do_train = bool(input('Train? [1/0]:'))
-except ValueError:
-    print('Not a number')
-
+do_train = int(input('Train? [1/0]:'))
 if do_train:
-    data_augmentation = bool(input('Data augmentation? [1/0]:'))
+    data_augmentation = int(input('Data augmentation? [1/0]:'))
     if not data_augmentation:
         seg_cnn.fit(x_train, y_train.reshape((7260,47616,2)),
             batch_size=batch_size,
@@ -141,6 +135,7 @@ gt = (gt[:,:,:,1]>0.5)
 score = np.sum(np.sum(np.sum(np.equal(y_train[0:3630],gt))))/gt.size
 print('Train accuracy: ', score)
 #%%
+'''
 img_num = 1
 plt.figure()
 plt.subplot(2,1,1)
@@ -148,3 +143,5 @@ plt.imshow(y_train[img_num,:,:])
 plt.subplot(2,1,2)
 plt.imshow(gt[img_num,:,:])
 plt.show()
+'''
+print('Session over')
