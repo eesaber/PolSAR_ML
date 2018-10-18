@@ -2,34 +2,35 @@
 #!/usr/bin/env python3
 from scipy.io import loadmat
 import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
+import matplotlib.use
 import numpy as np
-import h5py
-import os.path
+import os.path, os.environ
 
+from keras import utils
+from keras import backend as K
+from keras.models import Model, Sequential, load_model
 from keras.layers import Input, Dense, Conv2D, MaxPooling2D, UpSampling2D
 from keras.layers import Dropout, Activation, Flatten
-from keras.models import Model, Sequential
 from keras.layers.normalization import BatchNormalization
 from keras.layers.core import Activation, Reshape, Permute
-from keras import backend as K
 from keras.preprocessing import image
-from keras import utils
-from keras.models import load_model
-from keras.datasets import cifar10
-from keras import utils
+
 
 #%% tensorflow setting
-if 'tensorflow' == K.backend():
+eat_all = 1
+if not eat_all and 'tensorflow' == K.backend():
     import tensorflow as tf
     from keras.backend.tensorflow_backend import set_session
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
-    config.gpu_options.per_process_gpu_memory_fraction = 0.5
+    config.gpu_options.per_process_gpu_memory_fraction = 0.3
     config.gpu_options.visible_device_list = "0"
     set_session(tf.Session(config=config))
+#%% Detect if $DISPALY exist 
+if os.environ.get('DISPLAY') is None:
+    matplotlib.use('Agg')
 
-#%% read image
+#%% read file
 work_path = os.path.dirname(os.path.realpath(__file__))
 work_path = work_path[0:work_path.find('src')]
 file_path = work_path+'data/'
@@ -53,10 +54,11 @@ plt.imshow(x_train[1,:,:,:])
 plt.gca().invert_yaxis()    
 plt.show()
 #%% imput data and setting
-data_augmentation = 0
 batch_size = 16
 epochs = 100
 n_labels = 2
+img_h = 96
+img_w = 496
 img_h, img_w = y_train.shape[1:]
 y_train = y_train.astype('float32')
 y_train = utils.to_categorical(y_train, n_labels).astype('float32')
@@ -66,11 +68,14 @@ y_train = utils.to_categorical(y_train, n_labels).astype('float32')
 seg_cnn = Sequential()
 # encoder
 seg_cnn.add(Conv2D(16, (3, 3), activation='relu', border_mode='same',
-                 input_shape=x_train.shape[1:]))
+                 #input_shape=x_train.shape[1:]))
+                 input_shape=(96,496,3)))
+seg_cnn.add(BatchNormalization())
+seg_cnn.add(Conv2D(16, (3, 3), activation='relu', border_mode='same'))
 seg_cnn.add(BatchNormalization())
 seg_cnn.add(MaxPooling2D((2, 2), padding='same'))
 
-seg_cnn.add(Conv2D(16, (3, 3), activation='relu', border_mode='same'))
+seg_cnn.add(Conv2D(32, (3, 3), activation='relu', border_mode='same'))
 seg_cnn.add(BatchNormalization())
 seg_cnn.add(MaxPooling2D((2, 2), padding='same'))
 
@@ -83,6 +88,8 @@ seg_cnn.add(UpSampling2D((2, 2)))
 seg_cnn.add(Conv2D(32, (3, 3), activation='relu', border_mode='same'))
 seg_cnn.add(BatchNormalization())
 seg_cnn.add(UpSampling2D((2, 2)))
+seg_cnn.add(Conv2D(16, (3, 3), activation='relu', border_mode='same'))
+seg_cnn.add(BatchNormalization())
 seg_cnn.add(Conv2D(16, (3, 3), activation='relu', border_mode='same'))
 seg_cnn.add(BatchNormalization())
 # connect to label
@@ -99,27 +106,35 @@ seg_cnn.add(Activation('softmax'))
 seg_cnn.compile(optimizer='adadelta', loss='categorical_crossentropy') 
 
 
-#%% training 
+#%% training
+try:
+    do_train = bool(input('Train? [1/0]:'))
+except ValueError:
+    print('Not a number')
 
-if not data_augmentation:
-    seg_cnn.fit(x_train, y_train.reshape((7260,47616,2)),
-        batch_size=batch_size,
-        epochs=epochs,
-        shuffle=True)
-    seg_cnn.save(model_path+'my_model_100.h5')
+if do_train:
+    data_augmentation = bool(input('Data augmentation? [1/0]:'))
+    if not data_augmentation:
+        seg_cnn.fit(x_train, y_train.reshape((7260,47616,2)),
+            batch_size=batch_size,
+            epochs=epochs,
+            shuffle=True)
+        seg_cnn.save(model_path+'my_model_'+str(epochs)+'.h5')
+    else:
+        datagen = image.ImageDataGenerator(samplewise_center=False,
+        rotation_range=30,
+        horizontal_flip=True,
+        vertical_flip=True)
+        datagen.fit(x_train)
+        seg_cnn.fit_generator(datagen.flow(x_train, y_train.reshape((7260,47616,2)),
+                                        batch_size=batch_size),
+        epochs=epochs)
+        seg_cnn.save(model_path+'my_model_'+str(epochs)+'_aug.h5')
+
+    y_hat = seg_cnn.predict(x_train[0:3630,:,:,:], verbose=1)
 else:
-    datagen = image.ImageDataGenerator(samplewise_center=True,
-    rotation_range=30,
-    horizontal_flip=True,
-    vertical_flip=True)
-
-#%%
-if 0:
     exist_model = load_model(model_path+'my_model_100.h5')
     y_hat = exist_model.predict(x_train[0:3630,:,:,:], verbose=1)
-else:
-    y_hat = seg_cnn.predict(x_train[0:2:3630,:,:,:], verbose=1)
-
     
 gt = y_hat.reshape(3630,96,496,2)
 gt = (gt[:,:,:,1]>0.5)
