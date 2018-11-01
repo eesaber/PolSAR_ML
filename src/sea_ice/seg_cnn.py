@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python3
-from scipy.io import loadmat
+from scipy.io import loadmat, savemat
 import matplotlib.pyplot as plt
 import numpy as np
 import os
@@ -13,7 +13,7 @@ from keras.layers import Dropout, Activation, Flatten
 from keras.layers.normalization import BatchNormalization
 from keras.layers.core import Activation, Reshape, Permute
 from keras.preprocessing import image
-
+from keras.optimizers import SGD, adadelta
 
 #%% tensorflow setting
 eat_all = 1
@@ -30,7 +30,7 @@ if not eat_all and 'tensorflow' == K.backend():
 work_path = os.path.dirname(os.path.realpath(__file__))
 work_path = work_path[0:work_path.find('src')]
 file_path = work_path+'data/'
-model_path =   work_path+'model/'
+model_path = work_path+'model/'
 
 if os.path.isfile(file_path+'x_1.mat'):
     mat_dict = loadmat(file_path+'x_1.mat')
@@ -75,6 +75,8 @@ seg_cnn.add(MaxPooling2D((2, 2), padding='same'))
 
 seg_cnn.add(Conv2D(32, (3, 3), activation='relu', border_mode='same'))
 seg_cnn.add(BatchNormalization())
+seg_cnn.add(Conv2D(32, (3, 3), activation='relu', border_mode='same'))
+seg_cnn.add(BatchNormalization())
 seg_cnn.add(MaxPooling2D((2, 2), padding='same'))
 
 seg_cnn.add(Conv2D(32, (3, 3), activation='relu', border_mode='same'))
@@ -85,6 +87,9 @@ seg_cnn.add(MaxPooling2D((2, 2), padding='same'))
 seg_cnn.add(UpSampling2D((2, 2)))
 seg_cnn.add(Conv2D(32, (3, 3), activation='relu', border_mode='same'))
 seg_cnn.add(BatchNormalization())
+seg_cnn.add(Conv2D(32, (3, 3), activation='relu', border_mode='same'))
+seg_cnn.add(BatchNormalization())
+
 seg_cnn.add(UpSampling2D((2, 2)))
 seg_cnn.add(Conv2D(16, (3, 3), activation='relu', border_mode='same'))
 seg_cnn.add(BatchNormalization())
@@ -101,7 +106,10 @@ seg_cnn.add(Reshape((n_labels, img_h*img_w)))
 seg_cnn.add(Permute((2, 1)))
 seg_cnn.add(Activation('softmax'))
 
-seg_cnn.compile(optimizer='adadelta', loss='categorical_crossentropy') 
+optimizer = SGD(lr=0.01, momentum=0.9, decay=0.001, nesterov=False)
+#optimizer = adadelta(lr=0.01,)
+seg_cnn.compile(optimizer=optimizer, loss='categorical_crossentropy',
+    metrics=['accuracy']) 
 
 
 #%% training
@@ -115,25 +123,34 @@ if do_train:
             shuffle=True)
         seg_cnn.save(model_path+'my_model_'+str(epochs)+'.h5')
     else:
+        print('Use data augmentation')
         datagen = image.ImageDataGenerator(samplewise_center=False,
-        rotation_range=30,
         horizontal_flip=True,
         vertical_flip=True)
         datagen.fit(x_train)
         seg_cnn.fit_generator(datagen.flow(x_train, y_train.reshape((7260,47616,2)),
                                         batch_size=batch_size),
-        epochs=epochs)
+        epochs=epochs,
+        use_multiporcessing=True,
+        shuffle=True)
         seg_cnn.save(model_path+'my_model_'+str(epochs)+'_aug.h5')
 
     y_hat = seg_cnn.predict(x_train[0:3630,:,:,:], verbose=1)
+    
 else:
     exist_model = load_model(model_path+'my_model_100.h5')
-    y_hat = exist_model.predict(x_train[0:3630,:,:,:], verbose=1)
-    
-gt = y_hat.reshape(3630,96,496,2)
+    y_hat = exist_model.predict(x_train, verbose=1)
+
+gt = y_hat.reshape(x_train.shape[0],96,496,2)
 gt = (gt[:,:,:,1]>0.5)
-score = np.sum(np.sum(np.sum(np.equal(y_train[0:3630],gt))))/gt.size
+savemat(file_path+'y_hat', gt, appendmat=False)
+
+'''
+gt = y_hat.reshape(3630,96,496,2)
+gt = (gt[:,:,:,1]>0.5)    
+score = np.sum(np.sum(np.sum(np.equal(y_train[0:3630,:,:,1],gt))))/gt.size
 print('Train accuracy: ', score)
+'''
 #%%
 '''
 img_num = 1

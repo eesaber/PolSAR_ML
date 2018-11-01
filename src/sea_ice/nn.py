@@ -1,130 +1,83 @@
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python3
-import scipy
+from scipy.io import loadmat, savemat
 import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
+from matplotlib import colors
 import numpy as np
-import h5py
 import os.path
-
 from sklearn.neural_network import MLPClassifier
 
-from keras.layers import Input, Dense, Conv2D, MaxPooling2D, UpSampling2D
-from keras.layers import Dropout, Activation, Flatten
-from keras.models import Model, Sequential
-from keras import backend as K
-from keras.preprocessing import image
-
-
-#%% tensorflow setting
-if 'tensorflow' == K.backend():
-    import tensorflow as tf
-    from keras.backend.tensorflow_backend import set_session
-    config = tf.ConfigProto()
-    config.gpu_options.allow_growth = True
-    config.gpu_options.per_process_gpu_memory_fraction = 0.3
-    config.gpu_options.visible_device_list = "0"
-    set_session(tf.Session(config=config))
 
 #%% read image
-path = '/home/akb/Code/PolSAR_ML/data/'
-if os.path.isfile(path+'image.mat'):
-    mat_dict = scipy.io.loadmat(path+'image')
-    raw = np.array(mat_dict['image'])
-if os.path.isfile(path+'label.mat'):
-    mat_dict = scipy.io.loadmat(path+'label')
-    label = np.array(mat_dict['bw'])
+if 1:
+    work_path = os.path.dirname(os.path.realpath(__file__))
+    work_path = work_path[0:work_path.find('src')]
+else:
+    work_path = '/home/akb/Code/PolSAR_ML/'
+file_path = work_path+'data/'
+model_path =   work_path+'model/'
+f_name_x = 'im_070426_3.mat'
+f_name_y = 'label.mat'
 #%%
-#label = read('label.mat')
-plt.figure(1)
-plt.imshow(10*np.log10(raw[:,:,0]))
-#plt.gca().invert_yaxis()    
-plt.show()
+if os.path.isfile(file_path+f_name_x):
+    mat_dict = loadmat(file_path+f_name_x)
+    x = np.array(mat_dict['im'])
+if os.path.isfile(file_path+f_name_y):
+    mat_dict = loadmat(file_path+f_name_y)
+    y = np.array(mat_dict['gt'])
 
 #%% reshape image and label
-x = raw.reshape((-1, raw.shape[2]), order='F')
-y = label.reshape((-1, 1), order='F').squeeze()
-x_train = x[1:2000000,:]
-x_test = x[2000001:-1,:]
-y_train = y[1:2000000]
-y_test = y[2000001:-1]
+y_train = y.reshape((-1, 1), order='F').squeeze()
+x = x[:,0:2]
 '''
-# recale 
-x_min = np.amin(x, axis=0)
-x_max = np.amax(x, axis=0)
-u = 0
-l = 1
-x = (x-x_min)/(x_max-x_min)*(u-l) + l
+#x = x.reshape((-1, x.shape[2]))
+p = np.random.permutation(y.size)
+train_set_size = 2700000
+print("Size of traing set: %f %%" % (100*train_set_size/y.size))
+x_train = x[p[:train_set_size],:]
+y_train = y[p[:train_set_size]]
+
+x_test = x[p[train_set_size:],:]
+y_test = y[p[train_set_size:]]
 '''
 #%% NN 
-clf = MLPClassifier(solver='lbfgs', alpha=1e-8, activation='relu',
-                hidden_layer_sizes=(10,30,30,20), random_state=1, 
+clf = MLPClassifier(solver='sgd', alpha=1e-5, activation='relu',
+                learning_rate_init = 0.1,
+                batch_size=100,
+                hidden_layer_sizes=(20,30,10), random_state=1,
+                validation_fraction=0.05,
+                early_stopping=True,
+                shuffle=True,
+                tol = 1e-8,
                 verbose=True)
-clf.fit(x, y)
+clf.fit(x, y_train)
 
 y_hat = clf.predict(x)
-y_hat = y_hat.reshape(raw.shape[0:2],order='F')
-plt.figure(1)
-plt.imshow(y_hat)
-plt.gca().invert_yaxis()    
-plt.show()
-print(np.sum(label!=y_hat)/y_hat.size)
+y_hat = y_hat.reshape((624,4608), order='F')
+temp = {}
+temp['y_hat'] = y_hat
+savemat(file_path+'y_hat_070426_3',temp,appendmat=False)
+#%% 
+Mm = np.sum((y_hat==1)*(y==1))/y.size
+Mf = np.sum((y_hat==1)*(y==0))/y.size
+Fm = np.sum((y_hat==0)*(y==1))/y.size
+Ff = np.sum((y_hat==0)*(y==0))/y.size
 
-#%% Data augmentation
-datagen = image.ImageDataGenerator(samplewise_center=True,
-    rotation_range=45,
-    horizontal_flip=True,
-    vertical_flip=True)
-
-load4dir = '/home/akb/Code/PolSAR_ML/data/training_data/hands1.jpg'
-save2dir = '/home/akb/Code/PolSAR_ML/data/generated_data/'
-
-x = image.img_to_array(image.load_img(load4dir))
-x1 = x.reshape((1,) + x.shape)  # this is a Numpy array with shape (1, 267, 400, 3)
-
-seed = 1
-i = 0
-for batch in datagen.flow(x1, batch_size=1,seed=seed,
-                          save_to_dir=save2dir, save_format='jpg'):
-    i += 1
-    if i > 9:
-        break  # otherwise the generator would loop indefinitely
-        
-i = 0
+print("Total Accuracy: %f" % (np.sum(y==y_hat)/y_hat.size))
+print("Confusion matrix:\n pred/true: MYI  FYI\n MYI     %.3f %.3f\n FYI     %.3f %.3f \n"
+ % (Mm, Mf, Fm, Ff))
 #%%
-i = 1
-plt.figure()
-for f in os.listdir(save2dir):
-    plt.subplot(2,5,i)
-    plt.imshow(mpimg.imread(save2dir+f))
-    i=i+1
+plt.figure(1)
+plt.imshow(y, aspect='auto',cmap= colors.ListedColormap(np.array([[0,120,0],[180,100,50]])/255))
+plt.gca().invert_yaxis()
+plt.gca().get_xaxis().set_ticks([])
+plt.gca().get_yaxis().set_ticks([])
+plt.gca().set_axis_off()
 plt.show()
+plt.savefig('/home/akb/Code/PolSAR_ML/output/label_070428_NN.jpg',
+            dpi=300,
+            bbox_inches='tight')
+            
 
-#%% Training CNN        
 
-seg_cnn = Sequential()
-seg_cnn.add(Conv2D(32, (3, 3), activation='relu', padding='same',
-                 input_shape=x_train.shape[1:]))
-seg_cnn.add(MaxPooling2D((2, 2), padding='same'))
-seg_cnn.add(Conv2D(8, (3, 3), activation='relu', padding='same'))
-seg_cnn.add(MaxPooling2D((2, 2), padding='same'))
-seg_cnn.add(Conv2D(8, (3, 3), activation='relu', padding='same'))
-seg_cnn.add(MaxPooling2D((2, 2), padding='same'))
 
-# at this point the representation is (4, 4, 8) i.e. 128-dimensional
-
-seg_cnn.add(Conv2D(8, (3, 3), activation='relu', padding='same'))
-seg_cnn.add(UpSampling2D((2, 2)))
-seg_cnn.add(Conv2D(8, (3, 3), activation='relu', padding='same'))
-seg_cnn.add(UpSampling2D((2, 2)))
-seg_cnn.add(Conv2D(16, (3, 3), activation='relu'))
-seg_cnn.add(UpSampling2D((2, 2)))
-seg_cnn.add(Conv2D(1, (3, 3), activation='sigmoid', padding='same'))
-seg_cnn.add(Activation('softmax'))
-
-seg_cnn.compile(optimizer='adadelta', loss='binary_crossentropy') 
-seg_cnn.fit(x_train, x_train,
-                epochs=25,
-                batch_size=128,
-                shuffle=True,
-                validation_data=(x_test, x_test))
