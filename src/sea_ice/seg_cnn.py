@@ -99,10 +99,9 @@ seg_cnn.add(BatchNormalization())
 seg_cnn.add(UpSampling2D((2, 2)))
 seg_cnn.add(Conv2D(16, (3, 3), activation='relu',border_mode='same'))
 seg_cnn.add(BatchNormalization())
-seg_cnn.add(Conv2D(n_labels, 1, 1, border_mode='valid'))
-seg_cnn.add(BatchNormalization())
 
-seg_cnn.add(Reshape((n_labels, img_h*img_w)))
+seg_cnn.add(Conv2D(n_labels, 1, 1, border_mode='valid'))
+seg_cnn.add(Reshape((n_labels, img_h*img_w), input_shape=(2,img_h,img_w)))
 seg_cnn.add(Permute((2, 1)))
 seg_cnn.add(Activation('softmax'))
 
@@ -141,9 +140,11 @@ else:
     exist_model = load_model(model_path+'my_model_100.h5')
     y_hat = exist_model.predict(x_train, verbose=1)
 
-gt = y_hat.reshape(x_train.shape[0],96,496,2)
-gt = (gt[:,:,:,1]>0.5)
-savemat(file_path+'y_hat', gt, appendmat=False)
+temp = y_hat.reshape(x_train.shape[0],96,496,2)
+temp = (temp[:,:,:,1]>0.5)
+gt = {}
+gt['gt'] = temp
+savemat(file_path+'y_hat.mat', gt, appendmat=False)
 
 '''
 gt = y_hat.reshape(3630,96,496,2)
