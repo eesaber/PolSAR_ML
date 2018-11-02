@@ -9,11 +9,9 @@ from myImageGenerator import myImageGenerator
 from keras import utils
 from keras import backend as K
 from keras.models import Model, Sequential, load_model
-from keras.layers import Input, Dense, Conv2D, MaxPooling2D, UpSampling2D
-from keras.layers import Dropout, Activation, Flatten
+from keras.layers import Conv2D, MaxPooling2D, UpSampling2D, Activation
 from keras.layers.normalization import BatchNormalization
-from keras.layers.core import Activation, Reshape, Permute
-from keras.preprocessing import image
+from keras.layers.core import Reshape, Permute
 from keras.optimizers import SGD, adadelta
 
 #%% tensorflow setting
@@ -31,18 +29,30 @@ if not eat_all and 'tensorflow' == K.backend():
 work_path = os.path.dirname(os.path.realpath(__file__))
 work_path = work_path[0:work_path.find('src')]
 file_path = work_path+'data/'
-model_path = work_path+'model/'
-augmentation_file_path = work_path+'data_aug/'
+if not os.path.exists(file_path):
+    os.makedirs(file_path)
+#%% read file
 
-#%%
-x_train, y_train = myImageGenerator()
+model_path = work_path+'model/'
+if not os.path.exists(model_path):
+    os.makedirs(model_path)
+
+augmentation_file_path = work_path+'data_aug/'
+if not os.path.exists(augmentation_file_path):
+    os.makedirs(augmentation_file_path)
+
+if os.path.isfile(augmentation_file_path+'x_train.mat'):
+    mat_dict = loadmat(augmentation_file_path+'x_train.mat')
+    x_train = np.array(mat_dict['x_train'])
+    mat_dict = loadmat(augmentation_file_path+'y_train.mat')
+    y_train = np.array(mat_dict['y_train'])
+else:
+    x_train, y_train = myImageGenerator()
 
 #%% imput data and setting
-batch_size = 16
-epochs = 100
+batch_size = 32
+epochs = 75
 n_labels = 2
-img_h = 96
-img_w = 496
 img_h, img_w = y_train.shape[1:]
 y_train = y_train.astype('float32')
 y_train = utils.to_categorical(y_train, n_labels).astype('float32')
