@@ -4,6 +4,7 @@ from scipy.io import loadmat, savemat
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+from myImageGenerator import myImageGenerator
 
 from keras import utils
 from keras import backend as K
@@ -31,26 +32,11 @@ work_path = os.path.dirname(os.path.realpath(__file__))
 work_path = work_path[0:work_path.find('src')]
 file_path = work_path+'data/'
 model_path = work_path+'model/'
-
-if os.path.isfile(file_path+'x_1.mat'):
-    mat_dict = loadmat(file_path+'x_1.mat')
-    x_train_1 = np.array(mat_dict['x_1'])    
-if os.path.isfile(file_path+'x_2.mat'):
-    mat_dict = loadmat(file_path+'x_2.mat')
-    x_train_2 = np.array(mat_dict['x_2'])
-x_train = np.concatenate((x_train_1, x_train_2), axis=0)
-
-if os.path.isfile(file_path+'y.mat'):
-    mat_dict = loadmat(file_path+'y.mat')
-    y_train = np.array(mat_dict['y'])
+augmentation_file_path = work_path+'data_aug/'
 
 #%%
-'''
-plt.figure()
-plt.imshow(x_train[1,:,:,:])
-plt.gca().invert_yaxis()    
-plt.show()
-'''
+x_train, y_train = myImageGenerator()
+
 #%% imput data and setting
 batch_size = 16
 epochs = 100
@@ -113,53 +99,11 @@ seg_cnn.compile(optimizer=optimizer, loss='categorical_crossentropy',
 
 #%% training
 do_train = int(input('Train? [1/0]:'))
-if do_train:
-    data_augmentation = int(input('Data augmentation? [1/0]:'))
-    if not data_augmentation:
-        seg_cnn.fit(x_train, y_train.reshape((7260,47616,2)),
-            batch_size=batch_size,
-            epochs=epochs,
-            shuffle=True)
-        seg_cnn.save(model_path+'my_model_'+str(epochs)+'.h5')
-    else:
-        print('Use data augmentation')
-        datagen = image.ImageDataGenerator(samplewise_center=False,
-        horizontal_flip=True,
-        vertical_flip=True)
-        datagen.fit(x_train)
-        seg_cnn.fit_generator(datagen.flow(x_train, y_train.reshape((7260,47616,2)),
-                                        batch_size=batch_size),
+if do_train:    
+    seg_cnn.fit(x_train, y_train.reshape((7260,47616,2)),
+        batch_size=batch_size,
         epochs=epochs,
-        use_multiporcessing=True,
         shuffle=True)
-        seg_cnn.save(model_path+'my_model_'+str(epochs)+'_aug.h5')
-
-    y_hat = seg_cnn.predict(x_train[0:3630,:,:,:], verbose=1)
+    seg_cnn.save(model_path+'my_model_'+str(epochs)+'.h5')
     
-else:
-    exist_model = load_model(model_path+'my_model_100.h5')
-    y_hat = exist_model.predict(x_train, verbose=1)
-
-temp = y_hat.reshape(x_train.shape[0],96,496,2)
-temp = (temp[:,:,:,1]>0.5)
-gt = {}
-gt['gt'] = temp
-savemat(file_path+'y_hat.mat', gt, appendmat=False)
-
-'''
-gt = y_hat.reshape(3630,96,496,2)
-gt = (gt[:,:,:,1]>0.5)    
-score = np.sum(np.sum(np.sum(np.equal(y_train[0:3630,:,:,1],gt))))/gt.size
-print('Train accuracy: ', score)
-'''
-#%%
-'''
-img_num = 1
-plt.figure()
-plt.subplot(2,1,1)
-plt.imshow(y_train[img_num,:,:])
-plt.subplot(2,1,2)
-plt.imshow(gt[img_num,:,:])
-plt.show()
-'''
 print('Session over')
