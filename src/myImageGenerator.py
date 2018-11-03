@@ -29,6 +29,7 @@ def myImageGenerator():
         plt.gca().set_axis_off()
         plt.show()
 
+    # Reference: https://github.com/keras-team/keras/issues/3059
     # Declare the same arguments and the same random seed for ImageDataGenerator
     seed = 87
     data_gen_args = dict(
@@ -83,7 +84,7 @@ def myImageGenerator():
     # Save image
     if 1:
         savemat(augmentation_file_path+'x_train.mat',
-            {'x_train': new_Xtrain})
+            {'x_train': new_Xtrain.astype(np.float32)})
         savemat(augmentation_file_path+'y_train.mat',
             {'y_train': new_Ytrain.astype(np.uint8)})
 

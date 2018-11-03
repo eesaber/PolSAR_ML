@@ -110,7 +110,7 @@ seg_cnn.compile(optimizer=optimizer, loss='categorical_crossentropy',
 #%% training
 do_train = int(input('Train? [1/0]:'))
 if do_train:    
-    seg_cnn.fit(x_train, y_train.reshape((7260,47616,2)),
+    seg_cnn.fit(x_train, y_train.reshape((x_train.shape[0],img_h*img_w,n_labels)),
         batch_size=batch_size,
         epochs=epochs,
         shuffle=True)
