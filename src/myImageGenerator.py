@@ -12,7 +12,7 @@ def myImageGenerator():
     #set path variable
     work_path = os.path.dirname(os.path.realpath(__file__))
     work_path = work_path[0:work_path.find('src')]
-    file_path = work_path+'data4testing/'
+    file_path = work_path+'data/'
     augmentation_file_path = work_path+'data_aug/'
     # read file
     mat_dict = loadmat(file_path+'image.mat')
@@ -35,17 +35,19 @@ def myImageGenerator():
     data_gen_args = dict(
         data_format="channels_last",
         samplewise_center=False,
-        horizontal_flip=True,
+        #horizontal_flip=True,
         vertical_flip=True,
-        shear_range=10,
+        width_shift_range=0.3,
+        height_shift_range=0.2,
+        shear_range=0.5,
         zoom_range=0.5,
-        rotation_range=45,
+        rotation_range=20,
         fill_mode='constant',
-        cval=0
-        )
+        cval=0)
+        
     data_flow_args = dict(
-        #save_to_dir=augmentation_file_path,
-        batch_size=32,
+        save_to_dir=augmentation_file_path,
+        batch_size=10,
         save_format='jpeg',
         seed=seed)
     # Pass the same seed and keyword arguments to each ImageDataGenerator
@@ -65,7 +67,7 @@ def myImageGenerator():
 
     # Image augmentation
     batches = 0
-    data_set_size = 5000
+    data_set_size = 100
     img_h = 96
     img_w = 496
     channels = 3
@@ -73,16 +75,14 @@ def myImageGenerator():
     new_Ytrain = np.zeros((data_set_size,img_h,img_w))
     for x_batch, y_batch in train_generator:
         #print(x_batch.shape)
-        
-        new_Xtrain[batches,:,:,:] = resize(np.squeeze(x_batch, axis=0), (img_h, img_w, channels), anti_aliasing=True)
-        new_Ytrain[batches,:,:] = resize(np.squeeze(y_batch, axis=(0, -1)), (img_h, img_w), anti_aliasing=True)
-        
+        #new_Xtrain[batches,:,:,:] = resize(np.squeeze(x_batch, axis=0), (img_h, img_w, channels), anti_aliasing=True)
+        #new_Ytrain[batches,:,:] = resize(np.squeeze(y_batch, axis=(0, -1)), (img_h, img_w), anti_aliasing=True)
         batches += 1
         if batches >= data_set_size :
             break
     
     # Save image
-    if 1:
+    if 0:
         savemat(augmentation_file_path+'x_train.mat',
             {'x_train': new_Xtrain.astype(np.float32)})
         savemat(augmentation_file_path+'y_train.mat',

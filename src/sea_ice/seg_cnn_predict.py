@@ -16,7 +16,7 @@ if os.path.isfile(file_path+'im_070426_3_cnn_final.mat'):
     x_train = np.array(mat_dict['generate_cnn_label'])    
 
 #%% Load the exist model and predict 
-exist_model = load_model(model_path+'my_model_100.h5')
+exist_model = load_model(model_path+'my_model_75.h5')
 y_hat = exist_model.predict(x_train, verbose=1)
 
 gt = {}

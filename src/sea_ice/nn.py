@@ -9,15 +9,15 @@ from sklearn.neural_network import MLPClassifier
 
 
 #%% read image
-if 1:
-    work_path = os.path.dirname(os.path.realpath(__file__))
-    work_path = work_path[0:work_path.find('src')]
-else:
-    work_path = '/home/akb/Code/PolSAR_ML/'
-file_path = work_path+'data/'
+work_path = os.path.dirname(os.path.realpath(__file__))
+work_path = work_path[0:work_path.find('src')]
+file_path = work_path+'data/final_version/'
 model_path =   work_path+'model/'
-f_name_x = 'im_070426_3.mat'
-f_name_y = 'label.mat'
+
+#f_name_x = 'image_070426_3_(4).mat'
+#f_name_y = 'mask_070426_3.mat'
+f_name_x = 'image_090811_(2).mat'
+f_name_y = 'mask_090811.mat'
 #%%
 if os.path.isfile(file_path+f_name_x):
     mat_dict = loadmat(file_path+f_name_x)
@@ -28,7 +28,6 @@ if os.path.isfile(file_path+f_name_y):
 
 #%% reshape image and label
 y_train = y.reshape((-1, 1), order='F').squeeze()
-x = x[:,0:2]
 '''
 #x = x.reshape((-1, x.shape[2]))
 p = np.random.permutation(y.size)
@@ -44,7 +43,8 @@ y_test = y[p[train_set_size:]]
 clf = MLPClassifier(solver='sgd', alpha=1e-5, activation='relu',
                 learning_rate_init = 0.1,
                 batch_size=100,
-                hidden_layer_sizes=(20,30,10), random_state=1,
+                hidden_layer_sizes=(20,30,10), 
+                random_state=1,
                 validation_fraction=0.05,
                 early_stopping=True,
                 shuffle=True,
@@ -53,10 +53,10 @@ clf = MLPClassifier(solver='sgd', alpha=1e-5, activation='relu',
 clf.fit(x, y_train)
 
 y_hat = clf.predict(x)
-y_hat = y_hat.reshape((624,4608), order='F')
-temp = {}
-temp['y_hat'] = y_hat
-savemat(file_path+'y_hat_070426_3',temp,appendmat=False)
+y_hat = y_hat.reshape((624, -1), order='F')
+savemat(file_path+'y_hat_090811.mat',
+    {"y_hat" : y_hat},
+    appendmat=False)
 #%% 
 Mm = np.sum((y_hat==1)*(y==1))/y.size
 Mf = np.sum((y_hat==1)*(y==0))/y.size
@@ -78,6 +78,4 @@ plt.savefig('/home/akb/Code/PolSAR_ML/output/label_070428_NN.jpg',
             dpi=300,
             bbox_inches='tight')
             
-
-
 
