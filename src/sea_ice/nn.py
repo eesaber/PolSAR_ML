@@ -16,7 +16,7 @@ model_path =   work_path+'model/'
 
 #f_name_x = 'image_070426_3_(4).mat'
 #f_name_y = 'mask_070426_3.mat'
-f_name_x = 'image_090811_(2).mat'
+f_name_x = 'image_090811_(1).mat'
 f_name_y = 'mask_090811.mat'
 #%%
 if os.path.isfile(file_path+f_name_x):
@@ -45,7 +45,7 @@ clf = MLPClassifier(solver='sgd', alpha=1e-5, activation='relu',
                 batch_size=100,
                 hidden_layer_sizes=(20,30,10), 
                 random_state=1,
-                validation_fraction=0.05,
+                validation_fraction=0.1,
                 early_stopping=True,
                 shuffle=True,
                 tol = 1e-8,
@@ -68,7 +68,7 @@ print("Confusion matrix:\n pred/true: MYI  FYI\n MYI     %.3f %.3f\n FYI     %.3
  % (Mm, Mf, Fm, Ff))
 #%%
 plt.figure(1)
-plt.imshow(y, aspect='auto',cmap= colors.ListedColormap(np.array([[0,120,0],[180,100,50]])/255))
+plt.imshow(y_hat, aspect='auto',cmap= colors.ListedColormap(np.array([[0,120,0],[180,100,50]])/255))
 plt.gca().invert_yaxis()
 plt.gca().get_xaxis().set_ticks([])
 plt.gca().get_yaxis().set_ticks([])
