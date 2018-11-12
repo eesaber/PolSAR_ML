@@ -1,18 +1,20 @@
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python3
+from model_1 import create_model
+
 from scipy.io import loadmat, savemat
+from skimage.transform import resize
 import matplotlib.pyplot as plt
 import numpy as np
 import os
 from myImageGenerator import myImageGenerator
 
-from keras import utils
+from keras import utils, optimizers
 from keras import backend as K
 from keras.models import Model, Sequential, load_model
 from keras.layers import Conv2D, MaxPooling2D, UpSampling2D, Activation
 from keras.layers.normalization import BatchNormalization
 from keras.layers.core import Reshape, Permute
-from keras.optimizers import SGD, adadelta
 
 #%% tensorflow setting
 eat_all = 1
@@ -58,12 +60,11 @@ y_train = y_train.astype('float32')
 y_train = utils.to_categorical(y_train, n_labels).astype('float32')
 
 #%% NN Architechture
-
+'''
 seg_cnn = Sequential()
 # encoder
-seg_cnn.add(Conv2D(16, (3, 3), activation='relu', border_mode='same',
-                 #input_shape=x_train.shape[1:]))
-                 input_shape=(96,496,3)))
+seg_cnn.add(Conv2D(16, (5, 5), activation='relu', border_mode='same',
+                 input_shape=x_train.shape[1:]))
 seg_cnn.add(BatchNormalization())
 seg_cnn.add(Conv2D(16, (3, 3), activation='relu', border_mode='same'))
 seg_cnn.add(BatchNormalization())
@@ -100,10 +101,13 @@ seg_cnn.add(Conv2D(n_labels, 1, 1, border_mode='valid'))
 seg_cnn.add(Reshape((n_labels, img_h*img_w), input_shape=(2,img_h,img_w)))
 seg_cnn.add(Permute((2, 1)))
 seg_cnn.add(Activation('softmax'))
+'''
+seg_cnn = create_model()
+#optimizer = optimizers.SGD(lr=0.01, momentum=0.9, decay=0.001, nesterov=False)
+#optimizer = optimizers.adadelta(lr=0.01,)
+optimizer = optimizers.Adagrad(lr=0.01, epsilon=None, decay=0.001)
 
-optimizer = SGD(lr=0.01, momentum=0.9, decay=0.001, nesterov=False)
-#optimizer = adadelta(lr=0.01,)
-seg_cnn.compile(optimizer=optimizer, loss='categorical_crossentropy',
+seg_cnn.compile(optimizer=optimizer, loss='binary_crossentropy',
     metrics=['accuracy']) 
 
 
@@ -117,3 +121,21 @@ if do_train:
     seg_cnn.save(model_path+'my_model_'+str(epochs)+'.h5')
     
 print('Session over')
+
+#%% produce sea-ice map
+temp = 'image_070426_03_(3).mat'
+if os.path.isfile(file_path+temp):
+    mat_dict = loadmat(file_path+temp)
+    x_test = np.array(mat_dict['im']).reshape((624, 4608, x_test.shape[1]),order='F')
+    x_test = resize(x_test, (96, 496. x_test.shape[2]), anti_aliasing=True)
+    
+
+y_test_hat = seg_cnn.predict(x_test)
+plt.imshow(y_test_hat, 
+        cmap= colors.ListedColormap(np.array([[0,120,0],[180,100,50]])/255),
+        aspect='auto')
+plt.gca().invert_yaxis()
+plt.gca().set_axis_off()
+plt.savefig(file_path+'/070426_3_cnn.jpg',
+            dpi=300,          
+            bbox_inches='tight')

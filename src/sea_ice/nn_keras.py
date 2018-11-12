@@ -5,8 +5,9 @@ import matplotlib.pyplot as plt
 from matplotlib import colors
 import numpy as np
 import os.path
-from sklearn.neural_network import MLPClassifier
 
+from keras import optimizers, Sequential, utils
+from keras.layers import Dense
 
 #%% read image
 work_path = os.path.dirname(os.path.realpath(__file__))
@@ -26,38 +27,41 @@ if os.path.isfile(file_path+f_name_y):
     mat_dict = loadmat(file_path+f_name_y)
     y = np.array(mat_dict['gt'])
 
-#%% reshape image and label
-y_train = y.reshape((-1, 1), order='F').squeeze()
-'''
-#x = x.reshape((-1, x.shape[2]))
-p = np.random.permutation(y.size)
-train_set_size = 2700000
-print("Size of traing set: %f %%" % (100*train_set_size/y.size))
-x_train = x[p[:train_set_size],:]
-y_train = y[p[:train_set_size]]
+#%% reshape label
+labels = 2
+y_train = y.reshape((-1, 1), order='F').squeeze().astype('float32')
 
-x_test = x[p[train_set_size:],:]
-y_test = y[p[train_set_size:]]
-'''
+
 #%% NN 
-clf = MLPClassifier(solver='sgd', alpha=1e-5, activation='relu',
-                learning_rate_init = 0.1,
-                batch_size=100,
-                hidden_layer_sizes=(20,30,10), 
-                random_state=1,
-                validation_fraction=0.1,
-                early_stopping=True,
-                shuffle=True,
-                tol = 1e-8,
-                verbose=True)
-clf.fit(x, y_train)
+batch_size = 200
+epochs = 20
+model = Sequential()
+model.add(Dense(20, input_shape=(x.shape[1],), activation='relu'))
+model.add(Dense(30, activation='relu'))
+model.add(Dense(10, activation='relu'))
+model.add(Dense(1, activation='softmax'))
+optimizer = optimizers.SGD(lr=0.01, momentum=0.9, decay=0.001,nesterov=False)
+model.compile(optimizer=optimizer,
+    loss='binary_crossentropy',
+    metrics=['accuracy'])
+model.fit(x, y_train,
+    validation_split=0.1,
+    epochs=epochs,
+    batch_size=batch_size,
+    verbose=1,
+    class_weight={0:1.0, 1:5.0},
+    shuffle=True)
 
-y_hat = clf.predict(x)
+y_hat = model.predict(x, verbose=1)
 y_hat = y_hat.reshape((624, -1), order='F')
-savemat(file_path+'y_hat_090811.mat',
-    {"y_hat" : y_hat},
-    appendmat=False)
-#%% 
+# 
+save_results = False
+if save_results:
+    savemat(file_path+'y_hat_090811.mat',
+        {"y_hat" : y_hat},
+        appendmat=False)
+
+#%% Show the confusion matrix
 Mm = np.sum((y_hat==1)*(y==1))/y.size
 Mf = np.sum((y_hat==1)*(y==0))/y.size
 Fm = np.sum((y_hat==0)*(y==1))/y.size
