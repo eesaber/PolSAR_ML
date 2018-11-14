@@ -15,6 +15,7 @@ from keras.models import Model, Sequential, load_model
 from keras.layers import Conv2D, MaxPooling2D, UpSampling2D, Activation
 from keras.layers.normalization import BatchNormalization
 from keras.layers.core import Reshape, Permute
+from keras import callbacks
 
 #%% tensorflow setting
 eat_all = 1
@@ -31,6 +32,7 @@ if not eat_all and 'tensorflow' == K.backend():
 work_path = os.path.dirname(os.path.realpath(__file__))
 work_path = work_path[0:work_path.find('src')]
 file_path = work_path+'data/'
+log_path = work_path+'log/'
 if not os.path.exists(file_path):
     os.makedirs(file_path)
 #%% read file
@@ -65,7 +67,17 @@ seg_cnn = create_model()
 #optimizer = optimizers.adadelta(lr=0.01,)
 optimizer = optimizers.Adagrad(lr=0.01, epsilon=None, decay=0.001)
 seg_cnn.compile(optimizer=optimizer, loss='binary_crossentropy',
-    metrics=['accuracy']) 
+    metrics=['accuracy'])
+tb = callbacks.TensorBoard(
+    log_dir=log_path,
+    batch_size=batch_size,
+    histogram_freq=0,
+    write_graph=True,
+    write_images=True)
+earlystop = callbacks.EarlyStopping(
+    monitor='val_loss',
+    min_delta=1e-4, 
+    patience=2)
 
 #%% training
 #do_train = int(input('Train? [1/0]:'))
@@ -74,25 +86,8 @@ if do_train:
     seg_cnn.fit(x_train, y_train.reshape((x_train.shape[0],img_h*img_w,n_labels)),
         batch_size=batch_size,
         epochs=epochs,
-        shuffle=True)
+        shuffle=True,
+        callbacks=[tb, earlystop])
     seg_cnn.save(model_path+'my_model_'+str(epochs)+'.h5')
     
 print('Session over')
-
-#%% produce sea-ice map
-temp = 'image_070426_03_(3).mat'
-if os.path.isfile(file_path+temp):
-    mat_dict = loadmat(file_path+temp)
-    x_test = np.array(mat_dict['im']).reshape((624, 4608, x_test.shape[1]),order='F')
-    x_test = resize(x_test, (96, 496. x_test.shape[2]), anti_aliasing=True)
-    
-
-y_test_hat = seg_cnn.predict(x_test)
-plt.imshow(y_test_hat, 
-        cmap= colors.ListedColormap(np.array([[0,120,0],[180,100,50]])/255),
-        aspect='auto')
-plt.gca().invert_yaxis()
-plt.gca().set_axis_off()
-plt.savefig(file_path+'/070426_3_cnn.jpg',
-            dpi=300,          
-            bbox_inches='tight')

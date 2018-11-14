@@ -77,14 +77,14 @@ def myImageGenerator():
     new_Ytrain = np.zeros((data_set_size,img_h,img_w))
     for x_batch, y_batch in train_generator:
         #print(x_batch.shape)
-        #new_Xtrain[batches,:,:,:] = resize(np.squeeze(x_batch, axis=0), (img_h, img_w, channels), anti_aliasing=True)
-        #new_Ytrain[batches,:,:] = resize(np.squeeze(y_batch, axis=(0, -1)), (img_h, img_w), anti_aliasing=True)
+        new_Xtrain[batches,:,:,:] = resize(np.squeeze(x_batch, axis=0), (img_h, img_w, channels), anti_aliasing=True)
+        new_Ytrain[batches,:,:] = resize(np.squeeze(y_batch, axis=(0, -1)), (img_h, img_w), anti_aliasing=True)
         batches += 1
         if batches >= data_set_size :
             break
     
     # Save image
-    if 0:
+    if 1:
         savemat(augmentation_file_path+'x_train.mat',
             {'x_train': new_Xtrain.astype(np.float32)})
         savemat(augmentation_file_path+'y_train.mat',
