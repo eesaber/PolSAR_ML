@@ -45,21 +45,34 @@ augmentation_file_path = work_path+'data_aug/'
 if not os.path.exists(augmentation_file_path):
     os.makedirs(augmentation_file_path)
 
-if os.path.isfile(augmentation_file_path+'x_train.mat'):
-    mat_dict = loadmat(augmentation_file_path+'x_train.mat')
-    x_train = np.array(mat_dict['x_train'])
-    mat_dict = loadmat(augmentation_file_path+'y_train.mat')
-    y_train = np.array(mat_dict['y_train'])
+if 0:
+    if os.path.isfile(augmentation_file_path+'x_train.mat'):
+        mat_dict = loadmat(augmentation_file_path+'x_train.mat')
+        x_train = np.array(mat_dict['x_train'])
+        mat_dict = loadmat(augmentation_file_path+'y_train.mat')
+        y_train = np.array(mat_dict['y_train'])
+    else:
+        x_train, y_train = myImageGenerator()
 else:
-    x_train, y_train = myImageGenerator()
+    mat_dict = loadmat(file_path+'image_070426_3_(3).mat')
+    x_train = np.array(mat_dict['im'])
+    x_train = x_train.reshape((624,4608,3),order='F')
+    x_train = resize(x_train, (96, 496, x_train.shape[-1]), anti_aliasing=True)
+    x_train = np.expand_dims(x_train, axis=0)
+    mat_dict = loadmat(file_path+'mask_070426_3.mat')
+    y_train = np.array(mat_dict['gt']).reshape((624,4608),order='F')
+    y_train = np.expand_dims(y_train, axis=0)
+
+print(x_train.shape)
+print(y_train.shape)
 
 #%% imput data and setting
-batch_size = 32
-epochs = 75
+batch_size = 1
+epochs = 50
 n_labels = 2
 img_h, img_w = y_train.shape[1:]
-y_train = y_train.astype('float32')
 y_train = utils.to_categorical(y_train, n_labels).astype('float32')
+print(y_train.shape)
 
 #%% CNN 
 seg_cnn = create_model()
