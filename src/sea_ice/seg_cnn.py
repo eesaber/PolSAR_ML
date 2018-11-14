@@ -59,60 +59,17 @@ img_h, img_w = y_train.shape[1:]
 y_train = y_train.astype('float32')
 y_train = utils.to_categorical(y_train, n_labels).astype('float32')
 
-#%% NN Architechture
-'''
-seg_cnn = Sequential()
-# encoder
-seg_cnn.add(Conv2D(16, (5, 5), activation='relu', border_mode='same',
-                 input_shape=x_train.shape[1:]))
-seg_cnn.add(BatchNormalization())
-seg_cnn.add(Conv2D(16, (3, 3), activation='relu', border_mode='same'))
-seg_cnn.add(BatchNormalization())
-seg_cnn.add(MaxPooling2D((2, 2), padding='same'))
-
-seg_cnn.add(Conv2D(32, (3, 3), activation='relu', border_mode='same'))
-seg_cnn.add(BatchNormalization())
-seg_cnn.add(Conv2D(32, (3, 3), activation='relu', border_mode='same'))
-seg_cnn.add(BatchNormalization())
-seg_cnn.add(MaxPooling2D((2, 2), padding='same'))
-
-seg_cnn.add(Conv2D(32, (3, 3), activation='relu', border_mode='same'))
-seg_cnn.add(BatchNormalization())
-seg_cnn.add(MaxPooling2D((2, 2), padding='same'))
-
-# decoder
-seg_cnn.add(UpSampling2D((2, 2)))
-seg_cnn.add(Conv2D(32, (3, 3), activation='relu', border_mode='same'))
-seg_cnn.add(BatchNormalization())
-seg_cnn.add(Conv2D(32, (3, 3), activation='relu', border_mode='same'))
-seg_cnn.add(BatchNormalization())
-
-seg_cnn.add(UpSampling2D((2, 2)))
-seg_cnn.add(Conv2D(16, (3, 3), activation='relu', border_mode='same'))
-seg_cnn.add(BatchNormalization())
-seg_cnn.add(Conv2D(16, (3, 3), activation='relu', border_mode='same'))
-seg_cnn.add(BatchNormalization())
-# connect to label
-seg_cnn.add(UpSampling2D((2, 2)))
-seg_cnn.add(Conv2D(16, (3, 3), activation='relu',border_mode='same'))
-seg_cnn.add(BatchNormalization())
-
-seg_cnn.add(Conv2D(n_labels, 1, 1, border_mode='valid'))
-seg_cnn.add(Reshape((n_labels, img_h*img_w), input_shape=(2,img_h,img_w)))
-seg_cnn.add(Permute((2, 1)))
-seg_cnn.add(Activation('softmax'))
-'''
+#%% CNN 
 seg_cnn = create_model()
 #optimizer = optimizers.SGD(lr=0.01, momentum=0.9, decay=0.001, nesterov=False)
 #optimizer = optimizers.adadelta(lr=0.01,)
 optimizer = optimizers.Adagrad(lr=0.01, epsilon=None, decay=0.001)
-
 seg_cnn.compile(optimizer=optimizer, loss='binary_crossentropy',
     metrics=['accuracy']) 
 
-
 #%% training
-do_train = int(input('Train? [1/0]:'))
+#do_train = int(input('Train? [1/0]:'))
+do_train = 1
 if do_train:    
     seg_cnn.fit(x_train, y_train.reshape((x_train.shape[0],img_h*img_w,n_labels)),
         batch_size=batch_size,

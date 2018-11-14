@@ -14,12 +14,14 @@ def myImageGenerator():
     work_path = work_path[0:work_path.find('src')]
     file_path = work_path+'data/'
     augmentation_file_path = work_path+'data_aug/'
+    file_name_x = 'image_070426_3_(3).mat'
+    file_name_y = 'mask_070426_3.mat'
     # read file
-    mat_dict = loadmat(file_path+'image.mat')
-    x_train = np.array(mat_dict['x_train'])
+    mat_dict = loadmat(file_path+file_name_x)
+    x_train = np.array(mat_dict['im']).reshape((624,4608,3),order='F')
     x_train = np.expand_dims(x_train, axis=0)
-    mat_dict = loadmat(file_path+'mask.mat')
-    y_train = np.array(mat_dict['y_train'])
+    mat_dict = loadmat(file_path+file_name_y)
+    y_train = np.array(mat_dict['gt']).reshape((624,4608),order='F')
     y_train = np.expand_dims(np.expand_dims(y_train, axis=-1), axis=0)
 
     if 0:
