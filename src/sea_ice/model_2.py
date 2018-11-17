@@ -1,150 +1,63 @@
-from __future__ import absolute_import
-from __future__ import print_function
-import os
-
-
-import keras.models as models
-from keras.layers.core import Layer, Dense, Dropout, Activation, Flatten, Reshape, Merge, Permute
-from keras.layers.convolutional import Convolution2D, MaxPooling2D, UpSampling2D, ZeroPadding2D
+# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
+from keras.models import Model, Sequential, load_model
+from keras.layers import Input, Dense, Conv2D, MaxPooling2D, UpSampling2D, Layer, ZeroPadding2D
 from keras.layers.normalization import BatchNormalization
+from keras.layers.core import Activation, Reshape, Permute
 
+img_h = 96
+img_w = 496
+n_labels = 2
+kernel = (3,3)
+zero_padding = (1,1)
+def get_encoder():    
+    return [
+        Conv2D(32, kernel, activation='relu', padding='same',
+            input_shape=(496,496,2)), 
+        BatchNormalization(),
+        ZeroPadding2D(padding=zero_padding),
+        Conv2D(32, kernel, activation='relu', padding='valid'), #"valid" means "no padding"
+        BatchNormalization(),
+        MaxPooling2D((2, 2), padding='same'),
 
-from keras import backend as K
+        ZeroPadding2D(padding=zero_padding),
+        Conv2D(64, kernel, activation='relu', padding='valid'),
+        BatchNormalization(),
+        ZeroPadding2D(padding=zero_padding),
+        Conv2D(64, kernel, activation='relu', padding='valid'),
+        BatchNormalization(),
+        MaxPooling2D((2, 2), padding='same'),
+    ]
 
-import cv2
-import numpy as np
-import json
-np.random.seed(07) # 0bserver07 for reproducibility
+def get_decoder():
+    return [
+        UpSampling2D((2, 2)),
+        ZeroPadding2D(padding=zero_padding),
+        Conv2D(64, kernel, activation='relu', padding='valid'),
+        BatchNormalization(),
+        ZeroPadding2D(padding=zero_padding),
+        Conv2D(64, kernel, activation='relu', padding='valid'),
+        BatchNormalization(),
 
+        UpSampling2D((2, 2)),
+        ZeroPadding2D(padding=zero_padding),
+        Conv2D(32, kernel, activation='relu', padding='valid'),
+        BatchNormalization(),
+        ZeroPadding2D(padding=zero_padding),
+        Conv2D(32, kernel, activation='relu', padding='valid'),
+        BatchNormalization(),
+        
+        # connect to label
+        #Conv2D(2, (1, 1), activation='sigmoid', padding='valid'),
+        Conv2D(2, (1, 1), activation='softmax', padding='valid'),
+    ]
 
-img_w = 480
-img_h = 360
-n_labels = 12
-
-kernel = 3
-pad = 1
-pool_size = 2
-
-encoding_layers = [
-    Convolution2D(64, kernel, kernel, border_mode='same'),
-    BatchNormalization(),
-    Activation('relu'),
-    Convolution2D(64, kernel, kernel, border_mode='same'),
-    BatchNormalization(),
-    Activation('relu'),
-    MaxPooling2D(pool_size=(pool_size, pool_size)),
-
-    Convolution2D(128, kernel, kernel, border_mode='same'),
-    BatchNormalization(),
-    Activation('relu'),
-    Convolution2D(128, kernel, kernel, border_mode='same'),
-    BatchNormalization(),
-    Activation('relu'),
-    MaxPooling2D(pool_size=(pool_size, pool_size)),
-
-    Convolution2D(256, kernel, kernel, border_mode='same'),
-    BatchNormalization(),
-    Activation('relu'),
-    Convolution2D(256, kernel, kernel, border_mode='same'),
-    BatchNormalization(),
-    Activation('relu'),
-    Convolution2D(256, kernel, kernel, border_mode='same'),
-    BatchNormalization(),
-    Activation('relu'),
-    MaxPooling2D(pool_size=(pool_size, pool_size)),
-
-    Convolution2D(512, kernel, kernel, border_mode='same'),
-    BatchNormalization(),
-    Activation('relu'),
-    Convolution2D(512, kernel, kernel, border_mode='same'),
-    BatchNormalization(),
-    Activation('relu'),
-    Convolution2D(512, kernel, kernel, border_mode='same'),
-    BatchNormalization(),
-    Activation('relu'),
-    MaxPooling2D(pool_size=(pool_size, pool_size)),
-
-    Convolution2D(512, kernel, kernel, border_mode='same'),
-    BatchNormalization(),
-    Activation('relu'),
-    Convolution2D(512, kernel, kernel, border_mode='same'),
-    BatchNormalization(),
-    Activation('relu'),
-    Convolution2D(512, kernel, kernel, border_mode='same'),
-    BatchNormalization(),
-    Activation('relu'),
-    MaxPooling2D(pool_size=(pool_size, pool_size)),
-]
-
-decoding_layers = [
-    UpSampling2D(size=(pool_size,pool_size)),
-    Convolution2D(512, kernel, kernel, border_mode='same'),
-    BatchNormalization(),
-    Activation('relu'),
-    Convolution2D(512, kernel, kernel, border_mode='same'),
-    BatchNormalization(),
-    Activation('relu'),
-    Convolution2D(512, kernel, kernel, border_mode='same'),
-    BatchNormalization(),
-    Activation('relu'),
-
-    UpSampling2D(size=(pool_size,pool_size)),
-    Convolution2D(512, kernel, kernel, border_mode='same'),
-    BatchNormalization(),
-    Activation('relu'),
-    Convolution2D(512, kernel, kernel, border_mode='same'),
-    BatchNormalization(),
-    Activation('relu'),
-    Convolution2D(256, kernel, kernel, border_mode='same'),
-    BatchNormalization(),
-    Activation('relu'),
-
-    UpSampling2D(size=(pool_size,pool_size)),
-    Convolution2D(256, kernel, kernel, border_mode='same'),
-    BatchNormalization(),
-    Activation('relu'),
-    Convolution2D(256, kernel, kernel, border_mode='same'),
-    BatchNormalization(),
-    Activation('relu'),
-    Convolution2D(128, kernel, kernel, border_mode='same'),
-    BatchNormalization(),
-    Activation('relu'),
-
-    UpSampling2D(size=(pool_size,pool_size)),
-    Convolution2D(128, kernel, kernel, border_mode='same'),
-    BatchNormalization(),
-    Activation('relu'),
-    Convolution2D(64, kernel, kernel, border_mode='same'),
-    BatchNormalization(),
-    Activation('relu'),
-
-    UpSampling2D(size=(pool_size,pool_size)),
-    Convolution2D(64, kernel, kernel, border_mode='same'),
-    BatchNormalization(),
-    Activation('relu'),
-    Convolution2D(n_labels, 1, 1, border_mode='valid'),
-    BatchNormalization(),
-]
-
-
-segnet_basic = models.Sequential()
-
-segnet_basic.add(Layer(input_shape=(3, 360, 480)))
-
-
-segnet_basic.encoding_layers = encoding_layers
-for l in segnet_basic.encoding_layers:
-    segnet_basic.add(l)
-
-
-segnet_basic.decoding_layers = decoding_layers
-for l in segnet_basic.decoding_layers:
-    segnet_basic.add(l)
-
-
-segnet_basic.add(Reshape((n_labels, img_h * img_w), input_shape=(12,img_h, img_w)))
-segnet_basic.add(Permute((2, 1)))
-segnet_basic.add(Activation('softmax'))
-
-with open('segNet_full_model.json', 'w') as outfile:
-outfile.write(json.dumps(json.loads(segnet_basic.to_json()), indent=2))
+def create_model():
+    model = Sequential()
+    encoder = get_encoder()
+    decoder = get_decoder()
+    for l in encoder:
+        model.add(l)
+    for l in decoder:
+        model.add(l)
+    return model

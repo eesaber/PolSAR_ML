@@ -11,13 +11,13 @@ from sklearn.neural_network import MLPClassifier
 #%% read image
 work_path = os.path.dirname(os.path.realpath(__file__))
 work_path = work_path[0:work_path.find('src')]
-file_path = work_path+'data/final_version/'
+file_path = work_path+'data/'
 model_path =   work_path+'model/'
 
 
 date = '070426'
 region = '3'
-vector_type = '(1)'
+vector_type = '(3)'
 f_train_x = 'image_'+date+'_'+region+'_'+vector_type+'.mat'
 f_train_y = 'mask_'+date+'_'+region+'.mat'
 #%%
@@ -30,7 +30,7 @@ if os.path.isfile(file_path+f_train_y):
 
 #%% reshape image and label
 y_train = y.reshape((-1, 1), order='F').squeeze()
-
+y = y.reshape((624,-1), order='F')
 #%% NN 
 clf = MLPClassifier(solver='sgd', alpha=1e-3, activation='relu',
                 learning_rate_init = 0.1,
@@ -88,7 +88,7 @@ if testing:
     plt.imshow(y_test_hat, aspect='auto',cmap= colors.ListedColormap(np.array([[0,120,0],[180,100,50]])/255))
     plt.gca().invert_yaxis()
     plt.gca().set_axis_off()
-    plt.savefig('/home/akb/Code/PolSAR_ML/output/label_'+date+'_'+region+'nn.jpg',
+    plt.savefig('/home/akb/Code/PolSAR_ML/output/label_'+date+'_'+region+'_nn.jpg',
                 dpi=300,
                 bbox_inches='tight')
     plt.show()

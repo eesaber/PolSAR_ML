@@ -69,7 +69,7 @@ def myImageGenerator():
 
     # Image augmentation
     batches = 0
-    data_set_size = 100
+    data_set_size = 200
     img_h = 96
     img_w = 496
     channels = 3
