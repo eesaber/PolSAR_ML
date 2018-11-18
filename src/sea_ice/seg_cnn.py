@@ -15,13 +15,13 @@ from keras import backend as K
 from keras import callbacks
 from keras.models import load_model
 #%% tensorflow setting
-eat_all = 1
+eat_all = 0
 if not eat_all and 'tensorflow' == K.backend():
     import tensorflow as tf
     from keras.backend.tensorflow_backend import set_session
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
-    config.gpu_options.per_process_gpu_memory_fraction = 0.3
+    config.gpu_options.per_process_gpu_memory_fraction = 0.7
     config.gpu_options.visible_device_list = "0"
     set_session(tf.Session(config=config))
 
@@ -45,15 +45,13 @@ if not os.path.exists(augmentation_file_path):
 
 
 #%%
-input_opt = 3
+input_opt = 0
 if input_opt == 0:
-    if os.path.isfile(augmentation_file_path+'x_train.mat'):
-        mat_dict = loadmat(augmentation_file_path+'x_train.mat')
+    if os.path.isfile(augmentation_file_path+'x_train_070428_3.mat'):
+        mat_dict = loadmat(augmentation_file_path+'x_train_070428_3.mat')
         x_train = np.array(mat_dict['x_train'])
-        mat_dict = loadmat(augmentation_file_path+'y_train.mat')
+        mat_dict = loadmat(augmentation_file_path+'y_train_070428_3.mat')
         y_train = np.array(mat_dict['y_train'])
-    else:
-        x_train, y_train = myImageGenerator()
 else:
     mat_dict = loadmat(file_path+'mask_070426_3_(2).mat')
     y_train = np.array(mat_dict['gt']).reshape((-1, 496),order='F')
@@ -74,11 +72,10 @@ x_train = 2*x_train
 
 #%% imput data and setting
 n_labels = 2
-batch_size = 1
-epochs = 300
+batch_size = 10
+epochs = 7
 img_h, img_w = 496, 496
 y_train = utils.to_categorical(y_train, n_labels).astype('float32')
-y_train = np.expand_dims(y_train, axis=0)
 print(y_train.shape)
 '''
 plt.imshow(y_train[0,:,:,0], aspect='auto',cmap= colors.ListedColormap(np.array([[0,120,0],[180,100,50]])/255))
@@ -95,7 +92,7 @@ seg_cnn.compile(optimizer=optimizer, loss='binary_crossentropy',
     metrics=['accuracy'])
 tb = callbacks.TensorBoard(
     log_dir=log_path,
-    batch_size=batch_size,
+    batch_size=batch_size*5,
     histogram_freq=0,
     write_graph=True,
     write_images=True)
@@ -111,15 +108,15 @@ if do_train:
     # seg_cnn.fit(x_train, y_train.reshape((x_train.shape[0],img_h*img_w,n_labels)),
     seg_cnn.fit(x_train, y_train,
         batch_size=batch_size,
-        verbose=0,
+        verbose=1,
         epochs=epochs,
         shuffle=True,
         callbacks=[tb])
     seg_cnn.save(model_path+'my_model_'+str(epochs)+'.h5')
 else:
     seg_cnn = load_model(model_path+'my_model_'+str(epochs)+'.h5')
-print('Session over')
 
+'''
 #%%
 y_train_hat = seg_cnn.predict(x_train)
 plt.imshow(y_train_hat[0,:,:,0], aspect='auto')
@@ -132,3 +129,5 @@ plt.imshow(y_train_hat[0,:,:,1], aspect='auto')
 plt.gca().invert_yaxis()
 plt.gca().set_axis_off()
 plt.show()
+'''
+print('Session over')
