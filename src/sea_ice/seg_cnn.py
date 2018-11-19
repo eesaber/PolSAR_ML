@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python3
-from model_2 import create_model
+from model_3 import create_model
 
 from scipy.io import loadmat, savemat
 from skimage.transform import resize
@@ -21,7 +21,7 @@ if not eat_all and 'tensorflow' == K.backend():
     from keras.backend.tensorflow_backend import set_session
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
-    config.gpu_options.per_process_gpu_memory_fraction = 0.7
+    config.gpu_options.per_process_gpu_memory_fraction = 0.35
     config.gpu_options.visible_device_list = "0"
     set_session(tf.Session(config=config))
 
@@ -72,8 +72,8 @@ x_train = 2*x_train
 
 #%% imput data and setting
 n_labels = 2
-batch_size = 10
-epochs = 7
+batch_size = 5
+epochs = 10
 img_h, img_w = 496, 496
 y_train = utils.to_categorical(y_train, n_labels).astype('float32')
 print(y_train.shape)
@@ -92,7 +92,7 @@ seg_cnn.compile(optimizer=optimizer, loss='binary_crossentropy',
     metrics=['accuracy'])
 tb = callbacks.TensorBoard(
     log_dir=log_path,
-    batch_size=batch_size*5,
+    batch_size=50,
     histogram_freq=0,
     write_graph=True,
     write_images=True)

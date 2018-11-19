@@ -25,7 +25,7 @@ if 0:
     y_train = y_train.reshape((624,4608),order='F')
     #y_train = resize(y_train, (96, 496), anti_aliasing=True) > 0.5
 else:
-    mat_dict = loadmat(file_path+'image_070426_3_(5).mat')
+    mat_dict = loadmat(file_path+'image_070426_3_(9).mat')
     x_train = np.array(mat_dict['qq'])
     x_train = np.expand_dims(x_train, axis=0)
 
@@ -39,7 +39,7 @@ plt.show()
 print(x_train.shape)
 
 #%% Load the exist model and predict 
-exist_model = load_model(model_path+'my_model_5.h5')
+exist_model = load_model(model_path+'my_model_7.h5')
 y_hat = exist_model.predict(x_train, verbose=0)
 
 #y_hat = (y_hat.reshape(x_train.shape[0],96,496,2))[:,:,:,1]>0.5
