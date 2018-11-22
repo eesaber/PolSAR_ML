@@ -5,15 +5,13 @@ from keras.layers import Input, Dense, Conv2D, MaxPooling2D, UpSampling2D, Layer
 from keras.layers.normalization import BatchNormalization
 from keras.layers.core import Activation, Reshape, Permute
 
-img_h = 96
-img_w = 496
 n_labels = 2
 kernel = (3,3)
 zero_padding = (1,1)
-def get_encoder():    
+def get_encoder(img_h, img_w, dim):
     return [
         Conv2D(32, kernel, activation='relu', padding='same',
-            input_shape=(496,496,2)), 
+            input_shape=(img_h,img_w,dim)),
         BatchNormalization(),
         ZeroPadding2D(padding=zero_padding),
         Conv2D(32, kernel, activation='relu', padding='valid'), #"valid" means "no padding"
@@ -52,9 +50,9 @@ def get_decoder():
         Conv2D(2, (1, 1), activation='softmax', padding='valid'),
     ]
 
-def create_model():
+def create_model(img_h, img_w, dim):
     model = Sequential()
-    encoder = get_encoder()
+    encoder = get_encoder(img_h, img_w, dim)
     decoder = get_decoder()
     for l in encoder:
         model.add(l)
