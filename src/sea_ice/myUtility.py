@@ -10,8 +10,7 @@ def get_path():
     path['model'] = path_root+'model/' # dir for saving model.
     path['aug'] = path_root+'data_aug/' # dir of the augmented data.
     path['output'] = path_root+'output/' # dir for saving output data.
-    for p in path:
-        if not os.path.exists(p):
-            os.makedirs(p)
-    
+    for key, value in path.items():
+        if not os.path.exists(value):
+            os.makedirs(value)
     return path   

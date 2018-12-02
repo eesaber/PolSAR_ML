@@ -10,27 +10,31 @@ from matplotlib import colors
 
 path = get_path()
 #%%
-input_vetor = '3'
+input_vetor = '4'
 region = '3'
-f_name = path['val']+'x_val_070426_'+region+'_'+input_vetor+'.mat'
+season = 'winter'
+print('input_vector: '+ input_vetor)
+print('season: '+season)
+if season == 'winter':
+    f_name = path['val']+'x_val_070426_'+region+'_'+input_vetor+'.mat'
+    print('region: '+ region)
+    exist_model = load_model(path['model']+'my_model_60_'+input_vetor+'.h5')
+    # exist_model = load_model(path['model']+'my_model_n_60_'+input_vetor+'.h5')
+else:
+    f_name = path['val']+'x_val_090811_'+input_vetor+'.mat'
+    exist_model = load_model(path['model']+'my_model_s_8_'+input_vetor+'.h5')
+    
 x_train = np.array(loadmat(f_name)['x_val'])
 print(x_train.shape)
-
-'''
-plt.imshow(x_train[0,:,:,0], aspect='auto',cmap= colors.ListedColormap(np.array([[0,120,0],[180,100,50]])/255))
-plt.gca().invert_yaxis()
-plt.gca().set_axis_off()
-plt.show()
-'''
-
-#%% Load the exist model and predict 
-exist_model = load_model(path['model']+'my_model_10_'+input_vetor+'.h5')
 y_hat = exist_model.predict(x_train, verbose=0)
 
-savemat(path['output']+'y_hat_070426_'+region+'_'+input_vetor+'.mat',
-    {'y_hat': y_hat}, appendmat=False)
+if season == 'winter':
+    savemat(path['output']+'y_hat_070426_'+region+'_'+input_vetor+'.mat',
+        {'y_hat': y_hat}, appendmat=False)
+else:
+    savemat(path['output']+'y_hat_090811_'+input_vetor+'.mat',
+        {'y_hat': y_hat}, appendmat=False)
 
-#
 '''
 plt.imshow(y_hat[:,:,1], 
     aspect='auto',

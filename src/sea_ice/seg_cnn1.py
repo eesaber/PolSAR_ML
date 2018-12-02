@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 import os
-from termcolor import colored
 
 import numpy as np
 np.random.seed(1337) # for reproducibility
@@ -25,12 +24,12 @@ if not eat_all and 'tensorflow' == K.backend():
 
 ## read data
 path = get_path()
-input_vector = '(4)'
+input_vector = '(3)'
 # read validation data
 x_val = np.array(loadmat(path['val']+'x_val_070426_3_'+input_vector[1]+'.mat')['x_val'])
 y_val = np.array(loadmat(path['val']+'y_val_070426_3.mat')['y_val'])
 # read training data
-if 1:
+if 0:
     print('Use data augmentation')
     y_train = np.array(loadmat(path['aug']+'y_train_070426_3.mat')['y_train'])
     x_train = np.array([])
@@ -53,37 +52,29 @@ else:
 
 #%% imput data and setting
 n_labels = 2
-batch_size = 60
-epochs = 20
+batch_size = 3
+epochs = 60
 img_h, img_w = x_train.shape[1], x_train.shape[2]
 y_train = utils.to_categorical(y_train, n_labels).astype('float32')
 y_val = utils.to_categorical(y_val, n_labels).astype('float32')
-# print(y_train.shape)
+print(y_train.shape)
 
 #%% CNN 
 seg_cnn = create_model(img_h, img_w, x_train.shape[-1])
-lr = 0.01 # change to 0.05
-decay = 0.01
-print(colored('@--------- Parameters ---------@','green'))
-print('batch size: '+str(batch_size))
-print('learning rate: '+str(lr))
-print('decay:'+str(decay))
-print('input vector: '+input_vector)
-print(colored('@------------------------------@','green'))
 if input_vector == '(4)':
-    print('a')
-    optimizer = optimizers.Adagrad(lr=lr, epsilon=None, decay=decay)
-    # optimizer = optimizers.adadelta(lr=lr, rho=0.95, decay=decay)
-    # optimizer = optimizers.SGD(lr=lr, momentum=0.9, decay=decay, nesterov=False)
-else:
-    # optimizer = optimizers.SGD(lr=0.01, momentum=0.9, decay=0.001, nesterov=False)
-    optimizer = optimizers.adadelta(lr=lr, rho=0.95, decay=decay)
+    print('rrr')
+    # optimizer = optimizers.Adagrad(lr=1, epsilon=None, decay=0.001)
+    optimizer = optimizers.adadelta(lr=0.1, rho=0.95, decay=0.005)
+    # optimizer = optimizers.SGD(lr=0.01, momentum=0.1, decay=0.005, nesterov=False)
 
+else:
+    # optimizer = optimizers.SGD(lr=0.001, momentum=0.9, decay=0.001, nesterov=False)
+    optimizer = optimizers.adadelta(lr=0.3, rho=0.95, decay=0.01)
 
 seg_cnn.compile(optimizer=optimizer, loss='binary_crossentropy',
     metrics=['accuracy'])
 tb = callbacks.TensorBoard(
-    log_dir=path['log']+'winter/',
+    log_dir=path['log'],
     batch_size=batch_size,
     histogram_freq=0,
     write_graph=True,
@@ -91,12 +82,7 @@ tb = callbacks.TensorBoard(
 earlystop = callbacks.EarlyStopping(
     monitor='val_loss',
     min_delta=1e-4, 
-    patience=10)
-ckp = callbacks.ModelCheckpoint(
-    path['model']+'my_model_'+str(epochs)+'_'+input_vector+'.h5', # file path
-    monitor='val_loss',
-    verbose=0,
-    save_best_only=True, save_weights_only=False, mode='auto', period=1)
+    patience=5)
 
 #%% training
 input_vector = input_vector[1]
@@ -106,7 +92,7 @@ seg_cnn.fit(x_train, y_train,
     verbose=1,
     epochs=epochs,
     shuffle=True,
-    callbacks=[tb])
-seg_cnn.save(path['model']+'my_model_'+str(epochs)+'_'+input_vector+'.h5')
+    callbacks=[tb,earlystop])
+seg_cnn.save(path['model']+'my_model_n_'+str(epochs)+'_'+input_vector+'.h5')
 
 print('Session over')
