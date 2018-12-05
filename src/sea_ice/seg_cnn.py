@@ -25,7 +25,7 @@ if not eat_all and 'tensorflow' == K.backend():
 
 ## read data
 path = get_path()
-input_vector = '(4)'
+input_vector = '(3)'
 # read validation data
 x_val = np.array(loadmat(path['val']+'x_val_070426_3_'+input_vector[1]+'.mat')['x_val'])
 y_val = np.array(loadmat(path['val']+'y_val_070426_3.mat')['y_val'])
@@ -53,17 +53,20 @@ else:
 
 #%% imput data and setting
 n_labels = 2
-batch_size = 60
-epochs = 20
+batch_size = 50
+epochs = 80
 img_h, img_w = x_train.shape[1], x_train.shape[2]
 y_train = utils.to_categorical(y_train, n_labels).astype('float32')
 y_val = utils.to_categorical(y_val, n_labels).astype('float32')
 # print(y_train.shape)
 
+x_train = np.concatenate((x_train, x_val), axis=0)
+y_train = np.concatenate((y_train, y_val), axis=0)
+
 #%% CNN 
 seg_cnn = create_model(img_h, img_w, x_train.shape[-1])
-lr = 0.01 # change to 0.05
-decay = 0.01
+lr = 1 # change to 0.05
+decay = 0.0
 print(colored('@--------- Parameters ---------@','green'))
 print('batch size: '+str(batch_size))
 print('learning rate: '+str(lr))
@@ -72,8 +75,8 @@ print('input vector: '+input_vector)
 print(colored('@------------------------------@','green'))
 if input_vector == '(4)':
     print('a')
-    optimizer = optimizers.Adagrad(lr=lr, epsilon=None, decay=decay)
-    # optimizer = optimizers.adadelta(lr=lr, rho=0.95, decay=decay)
+    # optimizer = optimizers.Adagrad(lr=lr, epsilon=None, decay=decay)
+    optimizer = optimizers.adadelta(lr=lr, rho=0.95, decay=decay)
     # optimizer = optimizers.SGD(lr=lr, momentum=0.9, decay=decay, nesterov=False)
 else:
     # optimizer = optimizers.SGD(lr=0.01, momentum=0.9, decay=0.001, nesterov=False)
@@ -99,6 +102,7 @@ ckp = callbacks.ModelCheckpoint(
     save_best_only=True, save_weights_only=False, mode='auto', period=1)
 
 #%% training
+# seg_cnn.summary()
 input_vector = input_vector[1]
 seg_cnn.fit(x_train, y_train,
     batch_size=batch_size,
@@ -106,7 +110,7 @@ seg_cnn.fit(x_train, y_train,
     verbose=1,
     epochs=epochs,
     shuffle=True,
-    callbacks=[tb])
-seg_cnn.save(path['model']+'my_model_'+str(epochs)+'_'+input_vector+'.h5')
+    callbacks=[tb,ckp])
+# seg_cnn.save(path['model']+'my_model_'+str(epochs)+'_'+input_vector+'.h5')
 
 print('Session over')
