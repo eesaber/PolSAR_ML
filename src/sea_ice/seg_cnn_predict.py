@@ -10,29 +10,32 @@ from matplotlib import colors
 
 path = get_path()
 #%%
-input_vetor = '4'
+input_vector = '4'
 region = '3'
 season = 'winter'
-print('input_vector: '+ input_vetor)
+print('input_vector: '+ input_vector)
 print('season: '+season)
 if season == 'winter':
-    f_name = path['val']+'x_val_070426_'+region+'_'+input_vetor+'.mat'
+    # input_vector = '6'
+    f_name = path['val']+'x_val_070426_'+region+'_'+input_vector+'.mat'
     print('region: '+ region)
-    exist_model = load_model(path['model']+'my_model_60_'+input_vetor+'.h5')
-    # exist_model = load_model(path['model']+'my_model_n_60_'+input_vetor+'.h5')
+    # input_vector = '1'
+    exist_model = load_model('/home/akb/Code/PolSAR_ML/model_select/'+ 'winter_' + input_vector+ '.h5')
+    # exist_model = load_model(path['model']+'my_model_100_'+input_vector+'.h5')
+    # exist_model = load_model(path['model']+'my_model_n_60_'+input_vector+'.h5')
 else:
-    f_name = path['val']+'x_val_090811_'+input_vetor+'.mat'
-    exist_model = load_model(path['model']+'my_model_s_8_'+input_vetor+'.h5')
+    f_name = path['val']+'x_val_090811_'+input_vector+'.mat'
+    exist_model = load_model(path['model']+'my_model_s_8_'+input_vector+'.h5')
     
 x_train = np.array(loadmat(f_name)['x_val'])
 print(x_train.shape)
 y_hat = exist_model.predict(x_train, verbose=0)
 
 if season == 'winter':
-    savemat(path['output']+'y_hat_070426_'+region+'_'+input_vetor+'.mat',
+    savemat(path['output']+'y_hat_070426_'+region+'_'+input_vector+'.mat',
         {'y_hat': y_hat}, appendmat=False)
 else:
-    savemat(path['output']+'y_hat_090811_'+input_vetor+'.mat',
+    savemat(path['output']+'y_hat_090811_'+input_vector+'.mat',
         {'y_hat': y_hat}, appendmat=False)
 
 '''

@@ -13,7 +13,7 @@ from model_4 import create_model
 from myUtility import get_path
 
 #%% tensorflow setting
-eat_all = 0
+eat_all = 1
 if not eat_all and 'tensorflow' == K.backend():
     import tensorflow as tf
     from keras.backend.tensorflow_backend import set_session
@@ -25,7 +25,7 @@ if not eat_all and 'tensorflow' == K.backend():
 
 ## read data
 path = get_path()
-input_vector = '(3)'
+input_vector = '(1)'
 # read validation data
 x_val = np.array(loadmat(path['val']+'x_val_070426_3_'+input_vector[1]+'.mat')['x_val'])
 y_val = np.array(loadmat(path['val']+'y_val_070426_3.mat')['y_val'])
@@ -54,7 +54,7 @@ else:
 #%% imput data and setting
 n_labels = 2
 batch_size = 50
-epochs = 80
+epochs = 100
 img_h, img_w = x_train.shape[1], x_train.shape[2]
 y_train = utils.to_categorical(y_train, n_labels).astype('float32')
 y_val = utils.to_categorical(y_val, n_labels).astype('float32')
@@ -96,13 +96,14 @@ earlystop = callbacks.EarlyStopping(
     min_delta=1e-4, 
     patience=10)
 ckp = callbacks.ModelCheckpoint(
-    path['model']+'my_model_'+str(epochs)+'_'+input_vector+'.h5', # file path
+    path['model']+'my_model_'+str(epochs)+'_'+input_vector[1]+'.h5', # file path
     monitor='val_loss',
     verbose=0,
     save_best_only=True, save_weights_only=False, mode='auto', period=1)
 
 #%% training
-# seg_cnn.summary()
+seg_cnn.summary()
+
 input_vector = input_vector[1]
 seg_cnn.fit(x_train, y_train,
     batch_size=batch_size,

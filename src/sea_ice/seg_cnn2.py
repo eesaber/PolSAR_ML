@@ -24,7 +24,7 @@ if not eat_all and 'tensorflow' == K.backend():
 
 ## read data
 path = get_path()
-input_vector = '(2)'
+input_vector = '(4)'
 # read validation data
 x_val = np.array(loadmat(path['val']+'x_val_090811_'+input_vector[1]+'.mat')['x_val'])
 y_val = np.array(loadmat(path['val']+'y_val_090811.mat')['y_val'])
@@ -32,6 +32,7 @@ y_val = np.array(loadmat(path['val']+'y_val_090811.mat')['y_val'])
 print('Does not use data aegmentation')
 x_train = x_val
 y_train = y_val
+print(x_train.shape)
 
 #%% imput data and setting
 n_labels = 2
@@ -40,7 +41,7 @@ epochs = 8
 img_h, img_w = x_train.shape[1], x_train.shape[2]
 y_train = utils.to_categorical(y_train, n_labels).astype('float32')
 y_val = utils.to_categorical(y_val, n_labels).astype('float32')
-print(y_train.shape)
+
 
 #%% CNN 
 lr = 1
